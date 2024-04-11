@@ -1,0 +1,60 @@
+name: Test
+
+on:
+  push:
+    branches: [ 'master' ]
+  pull_request:
+    types: [ 'opened', 'synchronize', 'reopened' ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: [ '8.1', '8.2', '8.3' ]
+
+    env:
+      APP_ENV: testing
+      LOG_CHANNEL: single
+      LOG_LEVEL: debug
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.composer/cache
+          key: php-${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: php-${{ matrix.php-version }}-composer-
+
+      - name: Validate composer.json and composer.lock
+        run: composer validate
+
+      - name: Install Dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      - name: Deploy Database Schema
+        run: |
+          php skusync migrate --no-interaction -v
+          php skusync db:seed --no-interaction -v
+
+      - name: Check Code Style
+        run: composer style
+
+      - name: Static Code Analysis
+        run: composer analyze
+
+      - name: Execute Unit, Integration and Acceptance Tests
+        run: composer test
