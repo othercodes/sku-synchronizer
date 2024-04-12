@@ -9,3 +9,6 @@ coverage.xml
 coverage/
 test.xml
 composer.lock
+*.csv
+/storage/*
+*.xlsx
