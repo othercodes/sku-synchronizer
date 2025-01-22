@@ -5,6 +5,7 @@ namespace App\Commands;
 use App\Contracts\LocalProductRepository;
 use App\Exceptions\ProductNotFound;
 use App\Services\ProductSKUUpdater;
+use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Enumerable;
 use Illuminate\Support\LazyCollection;
@@ -20,16 +21,24 @@ class SetProductSKU extends Command
     public function handle(LocalProductRepository $repository, LoggerInterface $logger): void
     {
         $updater = new ProductSKUUpdater($repository, $logger);
-
+        $products = [];
         foreach ($this->getInputProducts() as $input) {
             try {
+                if (in_array($input['product'], $products)) {
+                    throw new Exception(strtr('Duplicated processed product {name} with SKU {sku}.', [
+                        '{name}' => $input['product'],
+                        '{sku}' => $input['sku']
+                    ]));
+                }
                 $product = $updater->update($input['product'], $input['sku'], $this->option('match-name'));
+                $products[] = $input['product'];
                 $this->info(strtr('Updating product {name} ({id}) with new SKU {sku}.', [
                     '{id}' => $product->id,
                     '{name}' => $product->name,
                     '{sku}' => $product->sku,
                 ]));
-            } catch (ProductNotFound $e) {
+
+            } catch (Exception $e) {
                 $this->error($e->getMessage());
             }
         }

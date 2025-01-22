@@ -40,7 +40,7 @@ final readonly class ProductFinder
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    public function search(string $name, int $precision = 95): Collection
+    public function search(string $name, int $precision = 100): Collection
     {
         $products = new Collection();
 
@@ -61,10 +61,6 @@ final readonly class ProductFinder
             }
         }
 
-        $sorted = $products->sortByDesc('percent');
-
-        $this->logger->info("Total products matched by $name: {$sorted->count()}.");
-
-        return $sorted;
+        return $products;
     }
 }

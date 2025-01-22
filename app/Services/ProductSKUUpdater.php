@@ -35,6 +35,7 @@ final readonly class ProductSKUUpdater
         try {
             $product = $this->finder->byId($product);
         } catch (ProductNotFound $e) {
+            $this->logger->info("Unable to found the product $product by ID/Slug.");
             if (! (is_string($product) && $guessByName)) {
                 throw $e;
             }
